@@ -1,0 +1,34 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: jobs
+          POSTGRES_PASSWORD: jobs
+          POSTGRES_DB: jobs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jobs -d jobs"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+        env:
+          TEST_DATABASE_URL: postgres://jobs:jobs@localhost:5432/jobs?sslmode=disable
+      - run: docker compose --env-file deploy/.env.example -f deploy/compose.yml config --quiet
+      - run: docker build -t distributedjobplatform:ci .

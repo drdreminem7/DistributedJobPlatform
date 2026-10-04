@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: jobs
+      POSTGRES_PASSWORD: jobs
+      POSTGRES_DB: jobs
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobs -d jobs"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    profiles: [observability]
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  grafana:
+    image: grafana/grafana:12.4.11
+    profiles: [observability]
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./deploy/observability/grafana/datasource.yml:/etc/grafana/provisioning/datasources/platform.yml:ro
+      - ./deploy/observability/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/platform.yml:ro
+      - ./deploy/observability/grafana/platform.json:/var/lib/grafana/dashboards/platform.json:ro
+
+volumes:
+  postgres_data:

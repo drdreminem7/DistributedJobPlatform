@@ -1,0 +1,15 @@
+                                                                                                                                                                                   QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=0.42..0.62 rows=1 width=79) (actual time=0.309..0.310 rows=1.00 loops=1)
+   Buffers: shared hit=3 read=3
+   ->  LockRows  (cost=0.42..16241.47 rows=82188 width=79) (actual time=0.309..0.309 rows=1.00 loops=1)
+         Buffers: shared hit=3 read=3
+         ->  Index Scan using jobs_claim_rank_idx on jobs  (cost=0.42..15419.59 rows=82188 width=79) (actual time=0.277..0.277 rows=1.00 loops=1)
+               Filter: ((queue_name <> ALL ('{}'::text[])) AND (status = ANY ('{queued,scheduled,running}'::text[])) AND ((status = 'queued'::text) OR ((status = 'scheduled'::text) AND (scheduled_at <= clock_timestamp())) OR ((status = 'running'::text) AND (lease_expires_at <= clock_timestamp()) AND (attempt_count < max_attempts) AND (cancel_requested_at IS NULL))))
+               Index Searches: 1
+               Buffers: shared hit=1 read=3
+ Planning:
+   Buffers: shared hit=340 read=1
+ Planning Time: 0.715 ms
+ Execution Time: 0.336 ms
+(12 rows)

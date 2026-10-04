@@ -1,0 +1,9 @@
+apiVersion: 1
+providers:
+  - name: Distributed Job Platform
+    orgId: 1
+    folder: Job Platform
+    type: file
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

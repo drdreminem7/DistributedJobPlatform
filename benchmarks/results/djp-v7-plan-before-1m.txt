@@ -1,0 +1,19 @@
+                                                                                                                                                                     QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=77951.19..77951.21 rows=1 width=79) (actual time=1724.429..1724.434 rows=1.00 loops=1)
+   Buffers: shared hit=1032 read=17497 dirtied=1, temp read=8208 written=15443
+   ->  LockRows  (cost=77951.19..89271.27 rows=905606 width=79) (actual time=1724.429..1724.434 rows=1.00 loops=1)
+         Buffers: shared hit=1032 read=17497 dirtied=1, temp read=8208 written=15443
+         ->  Sort  (cost=77951.19..80215.21 rows=905606 width=79) (actual time=1724.389..1724.394 rows=1.00 loops=1)
+               Sort Key: (((priority)::numeric + floor((EXTRACT(epoch FROM (statement_timestamp() - CASE WHEN (status = 'running'::text) THEN lease_expires_at ELSE GREATEST(scheduled_at, created_at) END)) / '60'::numeric)))) DESC, (CASE WHEN (status = 'running'::text) THEN lease_expires_at ELSE GREATEST(scheduled_at, created_at) END), id
+               Sort Method: external merge  Disk: 61728kB
+               Buffers: shared hit=1032 read=17496, temp read=8208 written=15443
+               ->  Seq Scan on jobs  (cost=0.00..73423.16 rows=905606 width=79) (actual time=0.047..318.123 rows=900000.00 loops=1)
+                     Filter: ((queue_name <> ALL ('{}'::text[])) AND ((status = 'queued'::text) OR ((status = 'scheduled'::text) AND (scheduled_at <= clock_timestamp())) OR ((status = 'running'::text) AND (lease_expires_at <= clock_timestamp()) AND (attempt_count < max_attempts) AND (cancel_requested_at IS NULL))))
+                     Rows Removed by Filter: 100000
+                     Buffers: shared hit=1023 read=17496
+ Planning:
+   Buffers: shared hit=310 read=6
+ Planning Time: 1.095 ms
+ Execution Time: 1756.839 ms
+(16 rows)

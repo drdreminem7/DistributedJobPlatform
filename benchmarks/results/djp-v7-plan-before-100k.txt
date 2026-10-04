@@ -1,0 +1,19 @@
+                                                                                                                                                                     QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7787.53..7787.54 rows=1 width=79) (actual time=144.827..144.829 rows=1.00 loops=1)
+   Buffers: shared hit=1862, temp read=424 written=775
+   ->  LockRows  (cost=7787.53..8916.58 rows=90324 width=79) (actual time=144.827..144.828 rows=1.00 loops=1)
+         Buffers: shared hit=1862, temp read=424 written=775
+         ->  Sort  (cost=7787.53..8013.34 rows=90324 width=79) (actual time=144.797..144.798 rows=1.00 loops=1)
+               Sort Key: (((priority)::numeric + floor((EXTRACT(epoch FROM (statement_timestamp() - CASE WHEN (status = 'running'::text) THEN lease_expires_at ELSE GREATEST(scheduled_at, created_at) END)) / '60'::numeric)))) DESC, (CASE WHEN (status = 'running'::text) THEN lease_expires_at ELSE GREATEST(scheduled_at, created_at) END), id
+               Sort Method: external merge  Disk: 6184kB
+               Buffers: shared hit=1861, temp read=424 written=775
+               ->  Seq Scan on jobs  (cost=0.00..7335.91 rows=90324 width=79) (actual time=0.020..35.035 rows=90000.00 loops=1)
+                     Filter: ((queue_name <> ALL ('{}'::text[])) AND ((status = 'queued'::text) OR ((status = 'scheduled'::text) AND (scheduled_at <= clock_timestamp())) OR ((status = 'running'::text) AND (lease_expires_at <= clock_timestamp()) AND (attempt_count < max_attempts) AND (cancel_requested_at IS NULL))))
+                     Rows Removed by Filter: 10000
+                     Buffers: shared hit=1852
+ Planning:
+   Buffers: shared hit=320
+ Planning Time: 0.543 ms
+ Execution Time: 147.263 ms
+(16 rows)

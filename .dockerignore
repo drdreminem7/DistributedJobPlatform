@@ -1,0 +1,10 @@
+.git
+.github
+.local
+.env
+**/.env
+benchmarks
+deploy
+docs
+tests
+README.md

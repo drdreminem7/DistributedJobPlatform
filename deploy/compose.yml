@@ -1,0 +1,92 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: jobs
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: jobs
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobs -d jobs"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    image: distributedjobplatform:local
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["/app/api"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  worker:
+    image: distributedjobplatform:local
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: ["/app/worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      METRICS_ADDR: ":9091"
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    profiles: [observability]
+    volumes:
+      - ./observability/prometheus-container.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      api:
+        condition: service_healthy
+      worker:
+        condition: service_started
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.4.11
+    profiles: [observability]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./observability/grafana/datasource.yml:/etc/grafana/provisioning/datasources/platform.yml:ro
+      - ./observability/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/platform.yml:ro
+      - ./observability/grafana/platform.json:/var/lib/grafana/dashboards/platform.json:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

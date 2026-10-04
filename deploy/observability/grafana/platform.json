@@ -1,0 +1,115 @@
+{
+  "uid": "distributed-job-platform",
+  "title": "Distributed Job Platform",
+  "tags": ["jobs", "queues"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Queue depth",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"expr": "max(queue_depth)", "legendFormat": "queued and scheduled", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Active workers and jobs",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "max(active_workers)", "legendFormat": "workers", "refId": "A"},
+        {"expr": "max(active_jobs)", "legendFormat": "jobs", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Enqueue and completion rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(jobs_enqueued_total[5m]))", "legendFormat": "enqueued/s", "refId": "A"},
+        {"expr": "sum(rate(jobs_succeeded_total[5m]))", "legendFormat": "succeeded/s", "refId": "B"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 4,
+      "title": "Queue wait latency",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(queue_wait_seconds_bucket[5m])))", "legendFormat": "p50", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(queue_wait_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "B"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(queue_wait_seconds_bucket[5m])))", "legendFormat": "p99", "refId": "C"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "Execution latency",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(execution_seconds_bucket[5m])))", "legendFormat": "p50", "refId": "A"},
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(execution_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "B"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(execution_seconds_bucket[5m])))", "legendFormat": "p99", "refId": "C"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "Retry, failure and dead-letter rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(jobs_retried_total[5m]))", "legendFormat": "retried/s", "refId": "A"},
+        {"expr": "sum(rate(jobs_failed_total[5m]))", "legendFormat": "failed/s", "refId": "B"},
+        {"expr": "sum(rate(jobs_dead_lettered_total[5m]))", "legendFormat": "dead-lettered/s", "refId": "C"},
+        {"expr": "sum(rate(jobs_cancelled_total[5m]))", "legendFormat": "cancelled/s", "refId": "D"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Lease expiry rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "sum(rate(lease_expirations_total[5m]))", "legendFormat": "expired leases/s", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "ops", "min": 0}, "overrides": []},
+      "options": {}
+    },
+    {
+      "id": 8,
+      "title": "Claim latency p95",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(poll_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "min": 0}, "overrides": []},
+      "options": {}
+    }
+  ]
+}
